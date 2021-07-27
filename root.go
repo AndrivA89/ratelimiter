@@ -38,14 +38,15 @@ func RateLimitCall(c chan int) {
 		}
 	}
 
+	lenChan := len(c)
+
 	go func() {
 		for {
 			select {
 			case <-rate:
 				tasks = 0
 			case <-exit:
-				fmt.Println("case <-exit:")
-				return
+				os.Exit(0)
 			}
 		}
 	}()
@@ -54,6 +55,10 @@ func RateLimitCall(c chan int) {
 		for i := 0; i < maxWorkers; i++ {
 			go func(i int) {
 				if tasks < maxTasksInMinute {
+					lenChan--
+					if lenChan < 0 {
+						exit <- struct{}{}
+					}
 					atomic.AddInt32(&tasks, 1)
 					number := <-c
 					fmt.Printf("worker %v, task %v\n", i+1, number)
